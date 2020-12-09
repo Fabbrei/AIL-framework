@@ -160,7 +160,7 @@ function launching_scripts {
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "Duplicates" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Duplicates.py; read x"
     sleep 0.1
-    screen -S "Script_AIL" -X screen -t "DomClassifier" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./DomClassifier.py; read x"
+    #screen -S "Script_AIL" -X screen -t "DomClassifier" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./DomClassifier.py; read x"
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "Categ" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Categ.py; read x"
     sleep 0.1
@@ -174,7 +174,7 @@ function launching_scripts {
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "ApiKey" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./ApiKey.py; read x"
     sleep 0.1
-    screen -S "Script_AIL" -X screen -t "Web" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Web.py; read x"
+    #screen -S "Script_AIL" -X screen -t "Web" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Web.py; read x"
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "Credential" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Credential.py; read x"
     sleep 0.1
@@ -212,11 +212,11 @@ function launching_scripts {
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "LibInjection" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./LibInjection.py; read x"
     sleep 0.1
-    screen -S "Script_AIL" -X screen -t "MISPtheHIVEfeeder" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./MISP_The_Hive_feeder.py; read x"
+    #screen -S "Script_AIL" -X screen -t "MISPtheHIVEfeeder" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./MISP_The_Hive_feeder.py; read x"
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "Tags" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./Tags.py; read x"
     sleep 0.1
-    screen -S "Script_AIL" -X screen -t "SentimentAnalysis" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./SentimentAnalysis.py; read x"
+    #screen -S "Script_AIL" -X screen -t "SentimentAnalysis" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./SentimentAnalysis.py; read x"
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "DbCleaner" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./DbCleaner.py; read x"
     sleep 0.1
@@ -225,7 +225,11 @@ function launching_scripts {
     screen -S "Script_AIL" -X screen -t "SubmitPaste" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./submit_paste.py; read x"
     sleep 0.1
     screen -S "Script_AIL" -X screen -t "IPAddress" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./IPAddress.py; read x"
-
+    sleep 0.1
+    screen -S "Script_AIL" -X screen -t "UniboFilter" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./UniboFilter.py; read x"
+    sleep 0.1
+    screen -S "Script_AIL" -X screen -t "FullzScript" bash -c "cd ${AIL_BIN}; ${ENV_PY} ./FullzFinder.py; read x"
+    sleep 0.1
 }
 
 function launching_crawler {

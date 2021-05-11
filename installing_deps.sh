@@ -11,6 +11,9 @@ sudo apt-get update
 sudo apt-get install python3-pip virtualenv python3-dev python3-tk libfreetype6-dev \
     screen g++ python-tk unzip libsnappy-dev cmake -qq
 
+#Needed for downloading jemalloc
+sudo apt-get install wget -qq
+
 #optional tor install
 sudo apt-get install tor -qq
 
@@ -85,6 +88,13 @@ pushd ardb/
 make
 popd
 
+# KVROCKS #
+# test ! -d kvrocks/ && git clone https://github.com/bitleak/kvrocks.git
+# pushd kvrocks/
+# make -j4
+# popd
+
+# Config File
 if [ ! -f configs/core.cfg ]; then
     cp configs/core.cfg.sample configs/core.cfg
 fi

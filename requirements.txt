@@ -1,4 +1,6 @@
+pyail
 pymisp
+d4-pyclient
 
 thehive4py
 
@@ -28,6 +30,7 @@ yara-python
 #Crawler
 scrapy
 scrapy-splash
+pycld3
 
 #Graph
 numpy

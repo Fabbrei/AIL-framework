@@ -16,7 +16,7 @@ Redis and ARDB overview
 
      DB 1 - Curve
      DB 2 - TermFreq
-     DB 3 - Trending
+     DB 3 - Trending/Trackers
      DB 4 - Sentiments
      DB 5 - TermCred
      DB 6 - Tags
@@ -419,6 +419,33 @@ Supported cryptocurrency:
   "png": 0
 }
 ```
+
+### Splash containers and proxies:
+| SET - Key | Value |
+| ------ | ------ |
+| all_proxy  | **proxy name**  |
+| all_splash | **splash name** |
+
+| HSET - Key | Field | Value |
+| ------ | ------ | ------ |
+| proxy:metadata:**proxy name** | host         | **host**              |
+| proxy:metadata:**proxy name** | port         | **port**              |
+| proxy:metadata:**proxy name** | type         | **type**              |
+| proxy:metadata:**proxy name** | crawler_type | **crawler_type**      |
+| proxy:metadata:**proxy name** | description  | **proxy description** |
+|  |  |  |
+| splash:metadata:**splash name** | description  | **splash description**          |
+| splash:metadata:**splash name** | crawler_type | **crawler_type**                |
+| splash:metadata:**splash name** | proxy        | **splash proxy (None if null)** |
+
+| SET - Key | Value |
+| ------ | ------ |
+| splash:url:**container name** | **splash url**     |
+| proxy:splash:**proxy name**   | **container name** |
+
+|  Key | Value |
+| ------ | ------ |
+| splash:map:url:name:**splash url** | **container name** |
 
 ##### CRAWLER QUEUES:
 | SET - Key | Value |

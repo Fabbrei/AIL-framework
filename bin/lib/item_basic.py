@@ -5,6 +5,8 @@ import os
 import sys
 import gzip
 
+import magic
+
 sys.path.append(os.path.join(os.environ['AIL_BIN'], 'lib/'))
 import ConfigLoader
 
@@ -35,6 +37,9 @@ def get_item_date(item_id, add_separator=False):
     else:
         return '{}{}{}'.format(l_directory[-4], l_directory[-3], l_directory[-2])
 
+def get_basename(item_id):
+    return os.path.basename(item_id)
+
 def get_source(item_id):
     return item_id.split('/')[-5]
 
@@ -62,6 +67,9 @@ def get_item_content(item_id):
         except:
             item_content = ''
     return str(item_content)
+
+def get_item_mimetype(item_id):
+    return magic.from_buffer(get_item_content(item_id), mime=True)
 
 #### TREE CHILD/FATHER ####
 def is_father(item_id):
@@ -166,3 +174,38 @@ def add_map_obj_id_item_id(obj_id, item_id, obj_type):
 # delete twitter id
 
 ##--  --##
+
+## COMMON ##
+def _get_dir_source_name(directory, source_name=None, l_sources_name=set()):
+    if source_name:
+        l_dir = os.listdir(os.path.join(directory, source_name))
+    else:
+        l_dir = os.listdir(directory)
+    # empty directory
+    if not l_dir:
+        return l_sources_name.add(source_name)
+        return l_sources_name
+    else:
+        for src_name in l_dir:
+            if len(src_name) == 4:
+                try:
+                    int(src_name)
+                    l_sources_name.add(os.path.join(source_name))
+                    return l_sources_name
+                except:
+                    pass
+            if source_name:
+                src_name = os.path.join(source_name, src_name)
+            l_sources_name = _get_dir_source_name(directory, source_name=src_name, l_sources_name=l_sources_name)
+    return l_sources_name
+
+
+def get_all_items_sources():
+    res = _get_dir_source_name(PASTES_FOLDER)
+    print(res)
+
+##--  --##
+
+
+if __name__ == '__main__':
+    get_all_items_sources()

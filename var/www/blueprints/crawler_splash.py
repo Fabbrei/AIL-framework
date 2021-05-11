@@ -24,8 +24,11 @@ sys.path.append(os.path.join(os.environ['AIL_BIN'], 'packages'))
 import Tag
 
 sys.path.append(os.path.join(os.environ['AIL_BIN'], 'lib'))
-import Domain
 import crawlers
+import Domain
+import Language
+
+import Config_DB
 
 r_cache = Flask_config.r_cache
 r_serv_db = Flask_config.r_serv_db
@@ -48,13 +51,44 @@ def create_json_response(data, status_code):
     return Response(json.dumps(data, indent=2, sort_keys=True), mimetype='application/json'), status_code
 
 # ============= ROUTES ==============
+@crawler_splash.route("/crawlers/dashboard", methods=['GET'])
+@login_required
+@login_read_only
+def crawlers_dashboard():
+    # # TODO:  get splash manager status
+    is_manager_connected = crawlers.get_splash_manager_connection_metadata()
+    all_splash_crawler_status = crawlers.get_all_spash_crawler_status()
+    splash_crawlers_latest_stats = crawlers.get_splash_crawler_latest_stats()
+    date = crawlers.get_current_date()
+
+    return render_template("dashboard_splash_crawler.html", all_splash_crawler_status = all_splash_crawler_status,
+                                is_manager_connected=is_manager_connected, date=date,
+                                splash_crawlers_latest_stats=splash_crawlers_latest_stats)
+
+@crawler_splash.route("/crawlers/crawler_dashboard_json", methods=['GET'])
+@login_required
+@login_read_only
+def crawler_dashboard_json():
+
+    all_splash_crawler_status = crawlers.get_all_spash_crawler_status()
+    splash_crawlers_latest_stats = crawlers.get_splash_crawler_latest_stats()
+
+    return jsonify({'all_splash_crawler_status': all_splash_crawler_status,
+                        'splash_crawlers_latest_stats':splash_crawlers_latest_stats})
+
 @crawler_splash.route("/crawlers/manual", methods=['GET'])
 @login_required
 @login_read_only
 def manual():
     user_id = current_user.get_id()
     l_cookiejar = crawlers.api_get_cookies_list_select(user_id)
-    return render_template("crawler_manual.html", crawler_enabled=True, l_cookiejar=l_cookiejar)
+    all_crawlers_types = crawlers.get_all_crawlers_queues_types()
+    all_splash_name = crawlers.get_all_crawlers_to_launch_splash_name()
+    return render_template("crawler_manual.html",
+                                is_manager_connected=crawlers.get_splash_manager_connection_metadata(),
+                                all_crawlers_types=all_crawlers_types,
+                                all_splash_name=all_splash_name,
+                                l_cookiejar=l_cookiejar)
 
 @crawler_splash.route("/crawlers/send_to_spider", methods=['POST'])
 @login_required
@@ -64,6 +98,8 @@ def send_to_spider():
 
     # POST val
     url = request.form.get('url_to_crawl')
+    crawler_type = request.form.get('crawler_queue_type')
+    splash_name = request.form.get('splash_name')
     auto_crawler = request.form.get('crawler_type')
     crawler_delta = request.form.get('crawler_epoch')
     screenshot = request.form.get('screenshot')
@@ -71,6 +107,9 @@ def send_to_spider():
     depth_limit = request.form.get('depth_limit')
     max_pages = request.form.get('max_pages')
     cookiejar_uuid = request.form.get('cookiejar')
+
+    if splash_name:
+        crawler_type = splash_name
 
     if cookiejar_uuid:
         if cookiejar_uuid == 'None':
@@ -80,10 +119,14 @@ def send_to_spider():
             cookiejar_uuid = cookiejar_uuid[-1].replace(' ', '')
 
     res = crawlers.api_create_crawler_task(user_id, url, screenshot=screenshot, har=har, depth_limit=depth_limit, max_pages=max_pages,
+                                                    crawler_type=crawler_type,
                                                     auto_crawler=auto_crawler, crawler_delta=crawler_delta, cookiejar_uuid=cookiejar_uuid)
     if res:
         return create_json_response(res[0], res[1])
     return redirect(url_for('crawler_splash.manual'))
+
+
+#### Domains ####
 
 # add route : /crawlers/show_domain
 @crawler_splash.route('/crawlers/showDomain', methods=['GET', 'POST'])
@@ -111,6 +154,7 @@ def showDomain():
         dict_domain = {**dict_domain, **domain.get_domain_correlation()}
         dict_domain['correlation_nb'] = Domain.get_domain_total_nb_correlation(dict_domain)
         dict_domain['father'] = domain.get_domain_father()
+        dict_domain['languages'] = Language.get_languages_from_iso(domain.get_domain_languages(), sort=True)
         dict_domain['tags'] = domain.get_domain_tags()
         dict_domain['tags_safe'] = Tag.is_tags_safe(dict_domain['tags'])
         dict_domain['history'] = domain.get_domain_history_with_status()
@@ -197,6 +241,57 @@ def domains_explorer_web():
 
     dict_data = Domain.get_domains_up_by_filers('regular', page=page, date_from=date_from, date_to=date_to)
     return render_template("domain_explorer.html", dict_data=dict_data, bootstrap_label=bootstrap_label, domain_type='regular')
+
+@crawler_splash.route('/domains/languages/all/json', methods=['GET'])
+@login_required
+@login_read_only
+def domains_all_languages_json():
+    # # TODO: get domain type
+    iso = request.args.get('iso')
+    domain_types = request.args.getlist('domain_types')
+    return jsonify(Language.get_languages_from_iso(Domain.get_all_domains_languages(), sort=True))
+
+@crawler_splash.route('/domains/languages/search_get', methods=['GET'])
+@login_required
+@login_read_only
+def domains_search_languages_get():
+    page = request.args.get('page')
+    try:
+        page = int(page)
+    except:
+        page = 1
+    domains_types = request.args.getlist('domain_types')
+    if domains_types:
+        domains_types = domains_types[0].split(',')
+    languages = request.args.getlist('languages')
+    if languages:
+        languages = languages[0].split(',')
+    l_dict_domains = Domain.api_get_domains_by_languages(domains_types, Language.get_iso_from_languages(languages), domains_metadata=True, page=page)
+    return render_template("domains/domains_filter_languages.html", template_folder='../../',
+                                l_dict_domains=l_dict_domains, bootstrap_label=bootstrap_label,
+                                current_languages=languages, domains_types=domains_types)
+
+@crawler_splash.route('/domains/name/search', methods=['GET'])
+@login_required
+@login_analyst
+def domains_search_name():
+    name = request.args.get('name')
+    page = request.args.get('page')
+    try:
+        page = int(page)
+    except:
+        page = 1
+    domains_types = request.args.getlist('domain_types')
+    if domains_types:
+        domains_types = domains_types[0].split(',')
+
+    l_dict_domains = Domain.api_search_domains_by_name(name, domains_types, domains_metadata=True, page=page)
+    return render_template("domains/domains_result_list.html", template_folder='../../',
+                                l_dict_domains=l_dict_domains, bootstrap_label=bootstrap_label,
+                                domains_types=domains_types)
+
+##--  --##
+
 
 ## Cookiejar ##
 @crawler_splash.route('/crawler/cookiejar/add', methods=['GET'])
@@ -402,5 +497,81 @@ def crawler_cookiejar_cookie_json_add_post():
             return redirect(url_for('crawler_splash.crawler_cookiejar_show', cookiejar_uuid=cookiejar_uuid))
 
     return redirect(url_for('crawler_splash.crawler_cookiejar_cookie_add', cookiejar_uuid=cookiejar_uuid))
+
+@crawler_splash.route('/crawler/settings', methods=['GET'])
+@login_required
+@login_analyst
+def crawler_splash_setings():
+    all_proxies = crawlers.get_all_proxies_metadata()
+    all_splash = crawlers.get_all_splash_crawler_metadata()
+    splash_manager_url = crawlers.get_splash_manager_url()
+    api_key = crawlers.get_hidden_splash_api_key()
+    is_manager_connected = crawlers.get_splash_manager_connection_metadata(force_ping=True)
+
+    nb_crawlers_to_launch = crawlers.get_nb_crawlers_to_launch()
+    #crawler_full_config = Config_DB.get_full_config_by_section('crawler')
+    is_crawler_working = crawlers.is_test_ail_crawlers_successful()
+    crawler_error_mess = crawlers.get_test_ail_crawlers_message()
+
+    return render_template("settings_splash_crawler.html",
+                                is_manager_connected=is_manager_connected,
+                                splash_manager_url=splash_manager_url, api_key=api_key,
+                                all_splash=all_splash, all_proxies=all_proxies,
+                                nb_crawlers_to_launch=nb_crawlers_to_launch,
+                                is_crawler_working=is_crawler_working,
+                                crawler_error_mess=crawler_error_mess,
+                                #crawler_full_config=crawler_full_config
+                                )
+
+@crawler_splash.route('/crawler/settings/crawler_manager', methods=['GET', 'POST'])
+@login_required
+@login_admin
+def crawler_splash_setings_crawler_manager():
+    if request.method == 'POST':
+        splash_manager_url = request.form.get('splash_manager_url')
+        api_key = request.form.get('api_key')
+
+        res = crawlers.api_save_splash_manager_url_api({'url':splash_manager_url, 'api_key':api_key})
+        if res[1] != 200:
+            return Response(json.dumps(res[0], indent=2, sort_keys=True), mimetype='application/json'), res[1]
+        else:
+            return redirect(url_for('crawler_splash.crawler_splash_setings'))
+    else:
+        splash_manager_url = crawlers.get_splash_manager_url()
+        api_key = crawlers.get_splash_api_key()
+        return render_template("settings_edit_splash_crawler_manager.html",
+                                    splash_manager_url=splash_manager_url, api_key=api_key)
+
+@crawler_splash.route('/crawler/settings/crawlers_to_lauch', methods=['GET', 'POST'])
+@login_required
+@login_admin
+def crawler_splash_setings_crawlers_to_lauch():
+    if request.method == 'POST':
+        dict_splash_name = {}
+        for crawler_name in list(request.form):
+            dict_splash_name[crawler_name]= request.form.get(crawler_name)
+        res = crawlers.api_set_nb_crawlers_to_launch(dict_splash_name)
+        if res[1] != 200:
+            return Response(json.dumps(res[0], indent=2, sort_keys=True), mimetype='application/json'), res[1]
+        else:
+            return redirect(url_for('crawler_splash.crawler_splash_setings'))
+    else:
+        nb_crawlers_to_launch = crawlers.get_nb_crawlers_to_launch_ui()
+        return render_template("settings_edit_crawlers_to_launch.html",
+                                    nb_crawlers_to_launch=nb_crawlers_to_launch)
+
+@crawler_splash.route('/crawler/settings/test_crawler', methods=['GET'])
+@login_required
+@login_admin
+def crawler_splash_setings_test_crawler():
+    crawlers.test_ail_crawlers()
+    return redirect(url_for('crawler_splash.crawler_splash_setings'))
+
+@crawler_splash.route('/crawler/settings/relaunch_crawler', methods=['GET'])
+@login_required
+@login_admin
+def crawler_splash_setings_relaunch_crawler():
+    crawlers.relaunch_crawlers()
+    return redirect(url_for('crawler_splash.crawler_splash_setings'))
 
 ##  - -  ##

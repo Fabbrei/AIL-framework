@@ -41,6 +41,15 @@ class ConfigLoader(object):
                                   db=self.cfg.getint(redis_name, "db"),
                                   decode_responses=decode_responses )
 
+    def get_files_directory(self, key_name):
+        directory_path = self.cfg.get('Directories', key_name)
+        # full path
+        if directory_path[0] == '/':
+            return directory_path
+        else:
+            directory_path = os.path.join(os.environ['AIL_HOME'], directory_path)
+            return directory_path
+
     def get_config_str(self, section, key_name):
         return self.cfg.get(section, key_name)
 
@@ -55,3 +64,12 @@ class ConfigLoader(object):
 
     def has_section(self, section):
         return self.cfg.has_section(section)
+
+    def get_all_keys_values_from_section(self, section):
+        if section in self.cfg:
+            all_keys_values = []
+            for key_name in self.cfg[section]:
+                all_keys_values.append((key_name, self.cfg.get(section, key_name)))
+            return all_keys_values
+        else:
+            return []

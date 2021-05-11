@@ -124,6 +124,19 @@ class Correlation(object):
 
         return (dict_resp, 200)
 
+    def get_all_correlations_by_subtype(self, subtype):
+        return r_serv_metadata.zrange(f'{self.correlation_name}_all:{subtype}', 0, -1)
+
+    def get_all_correlations_by_subtype_pagination(self, subtype, nb_elem=50, page=1):
+        start = (page - 1) * nb_elem
+        stop = start + nb_elem -1
+        return r_serv_metadata.zrange(f'{self.correlation_name}_all:{subtype}', start, stop)
+
+    def paginate_list(self, obj_list, nb_elem=50, page=1):
+        start = (page - 1) * nb_elem
+        stop = start + nb_elem
+        return obj_list[start:stop]
+
     def get_all_correlation_types(self):
         '''
         Gel all correlation types
@@ -429,7 +442,10 @@ class Correlation(object):
 
         return True
 
-######## API EXPOSED ########
+    ######## API EXPOSED ########
+    def api_check_objs_type(self, l_types):
+        for obj_type in l_types:
+            if not self.is_valid_obj_subtype(obj_type):
+                return ({"error": f"Invalid Type: {obj_type}"}, 400)
 
-
-########  ########
+    ########  ########
